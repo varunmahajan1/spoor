@@ -11,7 +11,10 @@
     "build": "npm run build --workspaces --if-present",
     "test": "vitest run",
     "typecheck": "tsc -b",
-    "ranges:update": "node scripts/update-ranges.mjs"
+    "ranges:update": "node scripts/update-ranges.mjs",
+    "test:php": "bash scripts/test-php.sh",
+    "golden": "node scripts/generate-golden.mjs",
+    "test:all": "npm run build && npm test && npm run test:php"
   },
   "devDependencies": {
     "@types/node": "^22.10.0",

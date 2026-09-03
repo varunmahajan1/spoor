@@ -63,6 +63,34 @@ spoor doctor
   store           0 events
 ```
 
+## 2b. Preflight
+
+Before instrumenting anything:
+
+```bash
+spoor preflight https://yoursite.com
+```
+
+```
+  ok    reachable        200 as a browser
+  ok    gptbot           200
+  ok    claudebot        200
+  ok    robots.txt       no AI crawler disallowed
+  FAIL  body content     0 chars of text, but <title> is set — client-rendered,
+                         so crawlers get an empty page
+  ok    sitemap.xml      46 URLs — use this for blind-spots
+```
+
+Three things it answers that logs never will. Whether an AI crawler is served
+the same thing a browser is, or a 403 at the edge. Whether `robots.txt` blocks
+one. And **whether there is any body content for a client that runs no
+JavaScript** — a client-rendered SPA answers 200 to GPTBot and serves an empty
+page, so a perfect coverage report would describe successful retrieval of
+nothing.
+
+Fix a `FAIL` here before instrumenting: otherwise the logs record the
+consequence rather than the cause.
+
 ## 3. Add the middleware
 
 One adapter for every fetch-shaped runtime. Two things vary, and they vary
@@ -172,6 +200,148 @@ The schema carries the field because a response served from cache *without*
 invoking the logger is an unlogged visit. Here the inverse holds: middleware
 runs before the cache, so at record time the status does not exist yet —
 `x-vercel-cache` is a *response* header. Inferring a value would invent a fact.
+
+## 3b. Cloudflare, and Shopify
+
+Standard Shopify has no first-party route — apps are admin-side, pixels are
+client-side and AI crawlers run no JavaScript, and Liquid cannot read the user
+agent. The only position left is a Cloudflare zone in front of the storefront.
+
+**Read [docs/DESIGN.md §2.2](DESIGN.md) before doing this on a live store.**
+Cloudflare documents Orange-to-Orange for Shopify on any plan including Free;
+Shopify's own position is that Cloudflare proxy setups, O2O included, are not
+supported and "could break at any time". Cloudflare documents it, Shopify
+disclaims it. That is a real tradeoff on a revenue-bearing storefront.
+
+```ts
+// worker.ts
+import { createWorker } from '@spoor/worker'
+import { r2BindingSink } from '@spoor/sinks'
+
+export default createWorker((env) => ({
+  sink: r2BindingSink({ bucket: env.SPOOR_BUCKET }),
+  onError: (e) => console.error('[spoor]', e),
+}))
+```
+
+```toml
+# wrangler.toml
+name = "spoor"
+main = "worker.ts"
+compatibility_date = "2026-01-01"
+
+[[r2_buckets]]
+binding = "SPOOR_BUCKET"
+bucket_name = "spoor"
+
+# Optional kill switch — set spoor:enabled = "off" to stop collection
+# without a redeploy. The read is edge-cached and fails open.
+[[kv_namespaces]]
+binding = "SPOOR_KV"
+id = "..."
+```
+
+Two settings to get right, both from Cloudflare's own Shopify guide:
+
+- **Do not enable "Always Use HTTPS."** It redirects
+  `/.well-known/acme-challenge/*` and breaks certificate renewal. Use a redirect
+  rule that excludes that path.
+- **Check the AI bot setting after the DNS move.** Cloudflare's "manage AI bot
+  traffic" feature writes the AI block by default, and a site can be invisible
+  to ChatGPT with nobody having chosen it. Moving DNS to install spoor and then
+  measuring zero traffic you caused is the failure that discredits the tool.
+  `spoor preflight` checks exactly this — run it before and after.
+
+Workers are disabled on `/checkout` under O2O, and this adapter refuses to touch
+it on any origin. Crawlers never request checkout, so nothing is lost.
+
+## 3c. Self-hosted, Magento, WooCommerce with shell access
+
+Vector tails the access log and writes a local spool; spoor classifies it.
+Vector deliberately does no classification — a second ruleset written in VRL
+would drift from the real one, which is the failure the versioned ruleset exists
+to prevent. It is shipped as a config, not as software.
+
+```bash
+cp vector/nginx.toml /etc/vector/spoor.toml     # or vector/apache.toml
+vector --config /etc/vector/spoor.toml
+
+# On the same host, on a timer:
+spoor ingest /var/spool/spoor
+```
+
+**Run `spoor ingest` on the log host.** That is what keeps the full IP on your
+infrastructure: it is read there for range verification, then truncated before
+anything is written. Shipping raw addresses to a central collector first would
+defeat the point of truncating them at all.
+
+One property worth knowing: on log-derived surfaces the event id is a content
+hash, so a restarted shipper re-reading old lines cannot double-count. The cost
+is that two genuinely distinct requests agreeing on timestamp, /24, path, user
+agent and status collapse into one row — undercounting a burst, never
+overcounting. Push surfaces mint a UUID per request and cannot collide.
+
+## 3d. WordPress and WooCommerce on managed hosting
+
+No shell means no Vector, so this is a PHP mu-plugin. It shares no code with the
+rest of spoor — it cannot, PHP and TypeScript do not mix — but it reads the same
+`ruleset.json`, copied verbatim rather than retyped. The test suite checks its
+classification, IP truncation and event ids against values generated by the
+TypeScript implementation, because two implementations of one ruleset that
+disagree would quietly stop the roll-up deduplicating.
+
+```
+wp-content/mu-plugins/
+  spoor.php
+  spoor-data/
+    ruleset.json
+    ranges.json
+```
+
+Files in `mu-plugins/` load automatically — no activation step, and no way for a
+site owner to disable it from the admin.
+
+### Where the spool goes, and why it matters
+
+Rows are written as NDJSON to a spool directory. **On most managed hosting the
+only writable place is `wp-content/uploads/`, which WordPress serves publicly.**
+The plugin defends that three ways: a per-site random directory suffix, an
+Apache `.htaccess` denying the directory, and an `index.php` against autoindex.
+
+**nginx does not read `.htaccess`.** If you are on nginx, do one of these:
+
+```nginx
+location ~* /uploads/spoor-[0-9a-f]+/ { deny all; return 404; }
+```
+
+or put the spool outside the web root entirely, which is better if you can:
+
+```php
+// wp-config.php
+define('SPOOR_SPOOL_DIR', '/home/you/private/spoor');
+```
+
+### Getting the data out
+
+Unlike Vector, this adapter classifies and verifies in place, so the spool is
+already full schema rows. Nothing needs re-processing — move the files and read
+them:
+
+```bash
+scp you@host:/home/you/private/spoor/*.ndjson .spoor/events/
+spoor report coverage
+```
+
+Options, all via `wp-config.php` constants: `SPOOR_SPOOL_DIR`,
+`SPOOR_KEEP_HUMANS`, `SPOOR_RETAIN_QUERY`.
+
+### Contributing to it
+
+The tests run in a container, so you need Docker but not PHP:
+
+```bash
+npm run test:php
+```
 
 ## 4. Production storage
 

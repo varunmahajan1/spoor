@@ -13,6 +13,7 @@ export default defineConfig({
       '@spoor/sinks/node': pkg('sinks', 'src/node.ts'),
       '@spoor/sinks': pkg('sinks'),
       '@spoor/middleware': pkg('middleware'),
+      '@spoor/worker': pkg('worker'),
       spoor: pkg('cli'),
     },
   },

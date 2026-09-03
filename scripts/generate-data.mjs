@@ -7,7 +7,7 @@
  * import it without a JSON import assertion, which behaves differently across
  * the Workers runtime, Node ESM and every bundler in between.
  */
-import { readFileSync, writeFileSync } from 'node:fs'
+import { readFileSync, writeFileSync, copyFileSync, mkdirSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
 import { dirname, join } from 'node:path'
 
@@ -60,7 +60,17 @@ export const RANGES = {
 `
 
 writeFileSync(join(core, 'src', 'data.generated.ts'), out)
+
+// The WordPress adapter is PHP and shares no code with core, so it reads the
+// ruleset as data (PRD AR-6). Copied verbatim rather than retyped, and copied
+// here rather than by hand so the two can never drift.
+const wp = join(here, '..', 'wordpress', 'spoor-data')
+mkdirSync(wp, { recursive: true })
+for (const name of ['ruleset', 'ranges']) {
+  copyFileSync(join(core, 'data', `${name}.json`), join(wp, `${name}.json`))
+}
 console.log(
   `generated data.generated.ts — ruleset ${ruleset.version}, ${ruleset.agents.length} agents, ` +
   `ranges ${ranges.version} (${Object.keys(ranges.ranges).length} buckets populated)`,
 )
+console.log('copied ruleset.json + ranges.json → wordpress/spoor-data/')

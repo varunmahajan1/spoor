@@ -1,0 +1,26 @@
+{
+  "name": "@spoor/worker",
+  "version": "0.1.0",
+  "description": "spoor's Cloudflare Worker adapter — the only route to standard Shopify, via Orange-to-Orange.",
+  "keywords": ["spoor", "ai-crawlers", "cloudflare", "workers", "shopify", "r2"],
+  "license": "MIT",
+  "author": "Varun Mahajan",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": { ".": { "types": "./dist/index.d.ts", "default": "./dist/index.js" } },
+  "files": ["dist"],
+  "dependencies": {
+    "@spoor/core": "0.1.0",
+    "@spoor/sinks": "0.1.0",
+    "@spoor/middleware": "0.1.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/varunmahajan1/spoor.git",
+    "directory": "packages/worker"
+  },
+  "homepage": "https://github.com/varunmahajan1/spoor#readme",
+  "bugs": { "url": "https://github.com/varunmahajan1/spoor/issues" },
+  "scripts": { "build": "tsc -b" }
+}

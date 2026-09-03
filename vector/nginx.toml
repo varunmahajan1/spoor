@@ -1,0 +1,74 @@
+# spoor — nginx access log → local spool
+#
+# Vector's job here is transport and shaping. It does NOT classify crawlers and
+# does NOT verify them, because the classifier is a versioned ruleset in the
+# repo (PRD AR-6) and a second copy written in VRL would drift from it. That is
+# the failure CL-1 exists to prevent, so this is a config, not software.
+#
+# The pipeline:
+#   nginx access.log  →  vector (parse, shape)  →  local spool
+#                     →  `spoor ingest` (classify, verify, truncate)  →  sink
+#
+# Run `spoor ingest` ON THIS HOST. That is what keeps LG-2 true: the full IP is
+# read there, used for range verification, and truncated before anything is
+# written, so it never leaves your infrastructure. Shipping the raw address to a
+# central collector first would defeat the point of truncating it at all.
+#
+# Install:
+#   vector --config /etc/vector/spoor-nginx.toml
+#   spoor ingest /var/spool/spoor --sink s3   # cron, every 15 minutes
+
+[sources.nginx]
+type            = "file"
+include         = ["/var/log/nginx/access.log"]
+read_from       = "beginning"
+ignore_older_secs = 86400
+
+[transforms.parse]
+type   = "remap"
+inputs = ["nginx"]
+source = '''
+  # `combined` is nginx's default. If your log_format is custom, change this
+  # rather than post-processing the result — a half-parsed line is worse than a
+  # dropped one because it looks like data.
+  parsed, err = parse_nginx_log(.message, format: "combined")
+  if err != null {
+    # Drop, but loudly: a silently failing shipper produces a clean-looking
+    # dataset with holes in it (PRD NF-7).
+    log("spoor: unparseable nginx line: " + err, level: "warn")
+    abort
+  }
+
+  .ts          = format_timestamp!(parsed.timestamp, format: "%+")
+  .host        = parsed.host || "${SPOOR_HOST:-}"
+  .method      = parsed.method
+  .url         = parsed.path
+  .status      = parsed.status
+  .bytes       = parsed.size
+  .user_agent  = parsed.agent
+  .referer     = parsed.referer
+
+  # Full address. Read by `spoor ingest` on this host for range verification,
+  # then truncated before storage. It is never written to the spool's sink.
+  .ip          = parsed.client
+
+  # Assets are not page fetches. Excluding them here keeps the spool small;
+  # `spoor ingest` applies the same rule again, so a missed one is harmless.
+  if match(string!(.url), r'^/(assets|_next/static|_astro|static)/') { abort }
+  if match(string!(.url), r'^/favicon\.(ico|png|svg)$') { abort }
+
+  del(.message); del(.file); del(.source_type); del(.timestamp)
+'''
+
+[sinks.spool]
+type              = "file"
+inputs            = ["parse"]
+path              = "/var/spool/spoor/%Y-%m-%d.ndjson"
+encoding.codec    = "json"
+
+  [sinks.spool.buffer]
+  type      = "disk"
+  max_size  = 268435488
+  # NF-2 in Vector's vocabulary: if the spool cannot be written, drop the
+  # newest events rather than applying back-pressure to the log pipeline.
+  when_full = "drop_newest"

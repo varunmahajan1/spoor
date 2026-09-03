@@ -47,3 +47,22 @@ If it runs on a request path, it must:
 
 `@spoor/core` is imported into Cloudflare Workers and Next.js middleware. CI
 fails if it gains a runtime dependency. If you need one, it belongs elsewhere.
+
+## The PHP adapter
+
+`wordpress/spoor.php` is the one part of spoor that cannot import core. It reads
+`spoor-data/ruleset.json`, which the build copies from `packages/core/data` —
+never edit the copy.
+
+Its tests run in a container, so you need Docker but not PHP:
+
+```bash
+npm run golden      # regenerate expectations from the TypeScript implementation
+npm run test:php    # assert PHP reproduces them
+```
+
+Change the ruleset and you must run both. The PHP suite is what stops two
+implementations of one ruleset from drifting apart, and drift there is not a
+cosmetic bug: classification, IP truncation and event ids all have to match
+byte for byte, or a WordPress row and a Vector row describing the same crawler
+stop deduplicating against each other.

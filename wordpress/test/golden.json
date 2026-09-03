@@ -1,0 +1,94 @@
+{
+  "classify": {
+    "Mozilla/5.0 AppleWebKit/537.36 (KHTML, like Gecko); compatible; GPTBot/1.2; +https://openai.com/gptbot": {
+      "bucket": "gptbot",
+      "purpose": "train"
+    },
+    "Mozilla/5.0 AppleWebKit/537.36 (KHTML, like Gecko); compatible; OAI-SearchBot/1.0; +https://openai.com/searchbot": {
+      "bucket": "oai-searchbot",
+      "purpose": "index"
+    },
+    "Mozilla/5.0 AppleWebKit/537.36 (KHTML, like Gecko); compatible; ChatGPT-User/1.0; +https://openai.com/bot": {
+      "bucket": "chatgpt-user",
+      "purpose": "user_fetch"
+    },
+    "Mozilla/5.0 (compatible; ClaudeBot/1.0; +claudebot@anthropic.com)": {
+      "bucket": "claudebot",
+      "purpose": "train"
+    },
+    "Mozilla/5.0 (compatible; Claude-SearchBot/1.0)": {
+      "bucket": "claude-searchbot",
+      "purpose": "index"
+    },
+    "Mozilla/5.0 (compatible; Claude-User/1.0)": {
+      "bucket": "claude-user",
+      "purpose": "user_fetch"
+    },
+    "Mozilla/5.0 (Macintosh) PerplexityBot/1.0; +https://perplexity.ai/perplexitybot": {
+      "bucket": "perplexitybot",
+      "purpose": "index"
+    },
+    "Mozilla/5.0 (Macintosh) Perplexity-User/1.0": {
+      "bucket": "perplexity-user",
+      "purpose": "user_fetch"
+    },
+    "Mozilla/5.0 (compatible; Googlebot/2.1; +http://www.google.com/bot.html)": {
+      "bucket": "googlebot",
+      "purpose": "index"
+    },
+    "Mozilla/5.0 (compatible; bingbot/2.0; +http://www.bing.com/bingbot.htm)": {
+      "bucket": "bingbot",
+      "purpose": "index"
+    },
+    "Mozilla/5.0 (compatible; Bytespider; spider-feedback@bytedance.com)": {
+      "bucket": "bytespider",
+      "purpose": "train"
+    },
+    "Mozilla/5.0 (compatible; Amazonbot/0.1)": {
+      "bucket": "amazonbot",
+      "purpose": "index"
+    },
+    "meta-externalagent/1.1": {
+      "bucket": "meta-externalagent",
+      "purpose": "train"
+    },
+    "Mozilla/5.0 (compatible; SomeBrandNewBot/1.0; +http://example.com/bot)": {
+      "bucket": "other-bot",
+      "purpose": "unknown"
+    },
+    "curl/8.7.1": {
+      "bucket": "other-bot",
+      "purpose": "unknown"
+    },
+    "python-requests/2.32.3": {
+      "bucket": "other-bot",
+      "purpose": "unknown"
+    },
+    "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 Chrome/131.0.0.0 Safari/537.36": {
+      "bucket": "human",
+      "purpose": "unknown"
+    },
+    "Mozilla/5.0 (iPhone; CPU iPhone OS 18_1 like Mac OS X) AppleWebKit/605.1.15 Version/18.1 Mobile/15E148 Safari/604.1": {
+      "bucket": "human",
+      "purpose": "unknown"
+    },
+    "": {
+      "bucket": "human",
+      "purpose": "unknown"
+    }
+  },
+  "truncate": {
+    "203.0.113.42": "203.0.113.0/24",
+    "8.8.8.8": "8.8.8.0/24",
+    "255.255.255.255": "255.255.255.0/24",
+    "2001:db8:1234:5678::1": "2001:db8:1234::/48",
+    "2001:db8::1": "2001:db8:0::/48",
+    "not-an-ip": null,
+    "": null
+  },
+  "eventId": {
+    "[\"2026-09-04T10:00:00.000Z\",\"203.0.113.0/24\",\"/products/widget\",\"GPTBot\",200]": "77d7038e68c3d2055117fb461fc609df",
+    "[\"2026-09-04T10:00:00.000Z\",null,\"/\",\"curl/8.7.1\",404]": "8599c5884f7b44687b6f37e768593f40",
+    "[\"2026-01-01T00:00:00.000Z\",\"2001:db8:1234::/48\",\"/a/b\",\"x\",429]": "cae0907887915a583a960b67fe807d61"
+  }
+}

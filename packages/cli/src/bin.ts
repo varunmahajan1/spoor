@@ -13,6 +13,8 @@ import { connect, createEventsView, paths, query, lit, remoteFromEnv, attachRemo
 import { blindSpots, coverage, byPurpose, verification, reachByAgent } from './report.js'
 import { readSitemap } from './sitemap.js'
 import { demoEvents } from './demo.js'
+import { preflight } from './preflight.js'
+import { ingest } from './ingest.js'
 
 const argv = process.argv.slice(2)
 const cmd = argv[0] ?? 'help'
@@ -53,6 +55,8 @@ ${bold('Usage')}
 
 ${bold('Commands')}
   init                    Write a config and print the middleware snippet
+  preflight <url>         Can AI crawlers reach this site, and read it?
+  ingest <path>           Classify log rows shipped by Vector (run on the log host)
   demo                    Generate sample traffic so you can see real output now
   doctor                  Check the classifier, the range list and the store
   rollup                  Roll NDJSON up into Parquet, deduped on event_id
@@ -127,6 +131,41 @@ async function main(): Promise<number> {
   export const config = { matcher: site.matcher }
 `)
       return 0
+    }
+
+    case 'ingest': {
+      const source = argv.slice(1).find((a) => !a.startsWith('--'))
+      if (!source) { console.error(red('usage: spoor ingest <file|dir>')); return 1 }
+      mkdirSync(P.events, { recursive: true })
+      const result = await ingest(source, fileSink({ dir: P.events }), {
+        surface: 'vector',
+        keepHumans: has('keep-humans'),
+        retainQuery: has('retain-query'),
+      })
+      console.log(`${green('✓')} ${result.written} events → ${P.events}`)
+      console.log(dim(`  ${result.read} lines read, ${result.skippedHuman} human rows dropped at source` +
+        (result.malformed > 0 ? `, ${yellow(String(result.malformed))} unparseable` : '')))
+      if (result.malformed > 0) {
+        console.log(dim('  Unparseable lines are skipped, not guessed. Check the Vector log_format.'))
+      }
+      return 0
+    }
+
+    case 'preflight': {
+      const target = argv.slice(1).find((a) => !a.startsWith('--'))
+      if (!target) { console.error(red('usage: spoor preflight <url>')); return 1 }
+      const result = await preflight(target)
+      if (has('json')) { console.log(JSON.stringify(result, null, 2)); return result.problems === 0 ? 0 : 1 }
+
+      const mark = { ok: green('ok  '), warn: yellow('warn'), fail: red('FAIL'), info: dim('--  ') }
+      console.log(`\n${bold('spoor preflight')} ${dim(result.url)}\n`)
+      for (const c of result.checks) {
+        console.log(`  ${mark[c.verdict]}  ${c.name.padEnd(16)} ${dim(c.detail)}`)
+      }
+      console.log(result.problems === 0
+        ? `\n${green('  nothing blocking')}\n`
+        : `\n  ${red(`${result.problems} blocking problem(s)`)} ${dim('— instrumenting will record the consequence, not the cause')}\n`)
+      return result.problems === 0 ? 0 : 1
     }
 
     case 'demo': {
