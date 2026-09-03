@@ -1,0 +1,65 @@
+{
+  "$comment": "Canonical AI crawler classifier ruleset. Language-neutral by design (PRD AR-6, CL-1) so adapters in any language share one source of truth. Matching is case-insensitive substring against the raw User-Agent, first match wins, so order is significant: more specific agents precede less specific ones.",
+  "version": "2026-09-04",
+  "buckets": [
+    "gptbot", "oai-searchbot", "chatgpt-user",
+    "claudebot", "claude-searchbot", "claude-user",
+    "perplexitybot", "perplexity-user",
+    "googlebot", "google-other", "bingbot", "applebot",
+    "bytespider", "amazonbot", "meta-externalagent",
+    "other-bot", "human"
+  ],
+  "purposes": ["train", "index", "user_fetch", "preview", "unknown"],
+  "notAUserAgent": {
+    "$comment": "PRD 8.3: these are robots.txt opt-out tokens, never user agents. No request ever arrives carrying them. They must never appear as buckets or they are permanently-zero columns.",
+    "tokens": ["google-extended", "applebot-extended"]
+  },
+  "agents": [
+    { "name": "OAI-SearchBot",        "bucket": "oai-searchbot",      "purpose": "index",      "vendor": "openai",     "match": ["oai-searchbot"] },
+    { "name": "ChatGPT-User",         "bucket": "chatgpt-user",       "purpose": "user_fetch", "vendor": "openai",     "match": ["chatgpt-user"] },
+    { "name": "GPTBot",               "bucket": "gptbot",             "purpose": "train",      "vendor": "openai",     "match": ["gptbot"] },
+
+    { "name": "Claude-SearchBot",     "bucket": "claude-searchbot",   "purpose": "index",      "vendor": "anthropic",  "match": ["claude-searchbot"] },
+    { "name": "Claude-User",          "bucket": "claude-user",        "purpose": "user_fetch", "vendor": "anthropic",  "match": ["claude-user"] },
+    { "name": "ClaudeBot",            "bucket": "claudebot",          "purpose": "train",      "vendor": "anthropic",  "match": ["claudebot", "anthropic-ai", "claude-web"] },
+
+    { "name": "Perplexity-User",      "bucket": "perplexity-user",    "purpose": "user_fetch", "vendor": "perplexity", "match": ["perplexity-user"] },
+    { "name": "PerplexityBot",        "bucket": "perplexitybot",      "purpose": "index",      "vendor": "perplexity", "match": ["perplexitybot"] },
+
+    { "name": "Google-Other",         "bucket": "google-other",       "purpose": "unknown",    "vendor": "google",     "match": ["google-other", "googleother"] },
+    { "name": "Google-CloudVertexBot","bucket": "google-other",       "purpose": "train",      "vendor": "google",     "match": ["google-cloudvertexbot"] },
+    { "name": "Googlebot",            "bucket": "googlebot",          "purpose": "index",      "vendor": "google",     "match": ["googlebot", "google-inspectiontool", "storebot-google", "googleweblight"] },
+
+    { "name": "Bingbot",              "bucket": "bingbot",            "purpose": "index",      "vendor": "microsoft",  "match": ["bingbot", "adidxbot", "microsoftpreview"] },
+    { "name": "Applebot",             "bucket": "applebot",           "purpose": "index",      "vendor": "apple",      "match": ["applebot"] },
+    { "name": "Bytespider",           "bucket": "bytespider",         "purpose": "train",      "vendor": "bytedance",  "match": ["bytespider"] },
+    { "name": "Amazonbot",            "bucket": "amazonbot",          "purpose": "index",      "vendor": "amazon",     "match": ["amazonbot"] },
+    { "name": "Meta-ExternalAgent",   "bucket": "meta-externalagent", "purpose": "train",      "vendor": "meta",       "match": ["meta-externalagent", "facebookbot"] },
+
+    { "$comment": "Known agents outside the frozen bucket list (PRD 8.1). Bucket is other-bot; purpose is recorded where the vendor documents it, and left unknown where it does not (CL-4). The raw user_agent is retained, so a future ruleset version can re-derive these (CL-2, CL-3).",
+      "name": "Meta-ExternalFetcher", "bucket": "other-bot",          "purpose": "user_fetch", "vendor": "meta",       "match": ["meta-externalfetcher"] },
+    { "name": "DuckAssistBot",        "bucket": "other-bot",          "purpose": "user_fetch", "vendor": "duckduckgo", "match": ["duckassistbot"] },
+    { "name": "DuckDuckBot",          "bucket": "other-bot",          "purpose": "index",      "vendor": "duckduckgo", "match": ["duckduckbot"] },
+    { "name": "MistralAI-User",       "bucket": "other-bot",          "purpose": "user_fetch", "vendor": "mistral",    "match": ["mistralai-user"] },
+    { "name": "YouBot",               "bucket": "other-bot",          "purpose": "index",      "vendor": "you.com",    "match": ["youbot"] },
+    { "name": "cohere-ai",            "bucket": "other-bot",          "purpose": "train",      "vendor": "cohere",     "match": ["cohere-ai", "cohere-training-data-crawler"] },
+    { "name": "AI2Bot",               "bucket": "other-bot",          "purpose": "train",      "vendor": "allenai",    "match": ["ai2bot"] },
+    { "name": "Diffbot",              "bucket": "other-bot",          "purpose": "train",      "vendor": "diffbot",    "match": ["diffbot"] },
+    { "name": "Timpibot",             "bucket": "other-bot",          "purpose": "train",      "vendor": "timpi",      "match": ["timpibot"] },
+    { "name": "ImagesiftBot",         "bucket": "other-bot",          "purpose": "train",      "vendor": "imagesift",  "match": ["imagesiftbot"] },
+    { "name": "Omgilibot",            "bucket": "other-bot",          "purpose": "train",      "vendor": "webz.io",    "match": ["omgilibot", "omgili"] },
+    { "name": "CCBot",                "bucket": "other-bot",          "purpose": "train",      "vendor": "commoncrawl","match": ["ccbot"] },
+    { "name": "Yandex",               "bucket": "other-bot",          "purpose": "index",      "vendor": "yandex",     "match": ["yandexbot"] },
+    { "name": "Slurp",                "bucket": "other-bot",          "purpose": "index",      "vendor": "yahoo",      "match": ["slurp"] },
+    { "name": "Facebook link preview","bucket": "other-bot",          "purpose": "preview",    "vendor": "meta",       "match": ["facebookexternalhit"] },
+    { "name": "Twitterbot",           "bucket": "other-bot",          "purpose": "preview",    "vendor": "x",          "match": ["twitterbot"] },
+    { "name": "Slackbot",             "bucket": "other-bot",          "purpose": "preview",    "vendor": "slack",      "match": ["slackbot"] },
+    { "name": "LinkedInBot",          "bucket": "other-bot",          "purpose": "preview",    "vendor": "linkedin",   "match": ["linkedinbot"] },
+    { "name": "Discordbot",           "bucket": "other-bot",          "purpose": "preview",    "vendor": "discord",    "match": ["discordbot"] },
+    { "name": "WhatsApp",             "bucket": "other-bot",          "purpose": "preview",    "vendor": "meta",       "match": ["whatsapp"] }
+  ],
+  "genericBotHints": {
+    "$comment": "A user agent matching none of the agents above but hitting one of these is other-bot / unknown rather than human. Everything else is human (PRD CL-4: never guess a purpose).",
+    "match": ["bot/", "bot ", "+bot", "crawler", "spider", "scraper", "curl/", "wget/", "python-requests", "python-urllib", "go-http-client", "java/", "okhttp", "libwww", "httpclient", "headlesschrome", "+http://", "+https://"]
+  }
+}

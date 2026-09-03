@@ -1,0 +1,32 @@
+name: ci
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: '22', cache: npm }
+      - run: npm ci
+      - run: npm run build
+      - run: npm test
+
+  # The core is imported into Cloudflare Workers and Next.js middleware, where
+  # bundle size and cold start are real. A dependency added here is a dependency
+  # on somebody's request path, so it fails the build rather than relying on
+  # review to catch it.
+  core-has-no-dependencies:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: |
+          deps=$(node -p "Object.keys(require('./packages/core/package.json').dependencies || {}).length")
+          if [ "$deps" != "0" ]; then
+            echo "::error::@spoor/core must have zero runtime dependencies; found $deps"
+            exit 1
+          fi
+          echo "@spoor/core has no runtime dependencies"

@@ -1,0 +1,6 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": { "outDir": "dist", "rootDir": "src", "composite": true, "module": "NodeNext", "moduleResolution": "nodenext" },
+  "include": ["src/**/*.ts"],
+  "references": [{ "path": "../core" }, { "path": "../cli" }]
+}

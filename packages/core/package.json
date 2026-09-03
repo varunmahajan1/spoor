@@ -1,0 +1,36 @@
+{
+  "name": "@spoor/core",
+  "version": "0.1.0",
+  "description": "Schema, versioned classifier and source-side verification for AI crawler request logs. Zero runtime dependencies.",
+  "license": "MIT",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    },
+    "./ruleset.json": "./data/ruleset.json",
+    "./ranges.json": "./data/ranges.json"
+  },
+  "files": [
+    "dist",
+    "data"
+  ],
+  "scripts": {
+    "generate": "node ../../scripts/generate-data.mjs",
+    "build": "npm run generate && tsc -b",
+    "prepublishOnly": "npm run build"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/varunmahajan1/spoor.git",
+    "directory": "packages/core"
+  },
+  "homepage": "https://github.com/varunmahajan1/spoor#readme",
+  "bugs": {
+    "url": "https://github.com/varunmahajan1/spoor/issues"
+  },
+  "author": "Varun Mahajan"
+}

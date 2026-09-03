@@ -1,0 +1,45 @@
+{
+  "name": "spoor",
+  "version": "0.1.0",
+  "description": "See which AI crawlers actually reached your site, and which pages they never did.",
+  "keywords": [
+    "ai-crawlers",
+    "gptbot",
+    "claudebot",
+    "perplexity",
+    "seo",
+    "aeo",
+    "logs",
+    "observability",
+    "mcp"
+  ],
+  "license": "MIT",
+  "type": "module",
+  "bin": {
+    "spoor": "./dist/bin.js"
+  },
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "files": [
+    "dist",
+    "sql"
+  ],
+  "dependencies": {
+    "@spoor/core": "0.1.0",
+    "@spoor/sinks": "0.1.0",
+    "@duckdb/node-api": "^1.5.5-r.4"
+  },
+  "scripts": {
+    "build": "tsc -b"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/varunmahajan1/spoor.git",
+    "directory": "packages/cli"
+  },
+  "homepage": "https://github.com/varunmahajan1/spoor#readme",
+  "bugs": {
+    "url": "https://github.com/varunmahajan1/spoor/issues"
+  },
+  "author": "Varun Mahajan"
+}

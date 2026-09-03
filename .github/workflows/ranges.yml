@@ -1,0 +1,38 @@
+# Refreshes the bundled crawler IP ranges and opens a pull request.
+#
+# This exists because a stale list produces false `unverified` rows, which read
+# to someone looking at a report as spoofing rather than as a maintenance lapse.
+# New agents also ship constantly, so a classifier left alone quietly stops
+# recognising traffic while continuing to look fine.
+name: refresh-ranges
+on:
+  schedule: [{ cron: '0 6 * * 1' }]   # Mondays, 06:00 UTC
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: '22' }
+      # Exit code 2 means some vendors failed and kept their previous data —
+      # a partial success worth a PR, not a build failure.
+      - run: node scripts/update-ranges.mjs || [ $? -eq 2 ]
+      - uses: peter-evans/create-pull-request@v7
+        with:
+          commit-message: 'chore: refresh published crawler IP ranges'
+          branch: chore/refresh-ranges
+          title: 'chore: refresh published crawler IP ranges'
+          body: |
+            Automated refresh of `packages/core/data/ranges.json` from the
+            vendors' published IP-range files.
+
+            Check the diff for a vendor whose list shrank sharply — that is
+            usually a changed endpoint rather than a changed range, and merging
+            it would silently turn verified rows into `unverified` ones.
+          delete-branch: true

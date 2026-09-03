@@ -1,0 +1,35 @@
+{
+  "name": "@spoor/next",
+  "version": "0.1.0",
+  "description": "spoor's Next.js middleware adapter \u2014 the reference collection surface (PRD CS-3).",
+  "license": "MIT",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "dependencies": {
+    "@spoor/core": "0.1.0",
+    "@spoor/sinks": "0.1.0"
+  },
+  "scripts": {
+    "build": "tsc -b"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/varunmahajan1/spoor.git",
+    "directory": "packages/next"
+  },
+  "homepage": "https://github.com/varunmahajan1/spoor#readme",
+  "bugs": {
+    "url": "https://github.com/varunmahajan1/spoor/issues"
+  },
+  "author": "Varun Mahajan"
+}

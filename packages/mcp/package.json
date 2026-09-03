@@ -1,0 +1,34 @@
+{
+  "name": "@spoor/mcp",
+  "version": "0.1.0",
+  "description": "MCP server over a spoor event store \u2014 ask your coding agent which AI crawlers reached what.",
+  "license": "MIT",
+  "type": "module",
+  "bin": {
+    "spoor-mcp": "./dist/bin.js"
+  },
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "files": [
+    "dist"
+  ],
+  "dependencies": {
+    "@spoor/core": "0.1.0",
+    "spoor": "0.1.0",
+    "@modelcontextprotocol/sdk": "^1.30.0",
+    "zod": "^3.25.0"
+  },
+  "scripts": {
+    "build": "tsc -b"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/varunmahajan1/spoor.git",
+    "directory": "packages/mcp"
+  },
+  "homepage": "https://github.com/varunmahajan1/spoor#readme",
+  "bugs": {
+    "url": "https://github.com/varunmahajan1/spoor/issues"
+  },
+  "author": "Varun Mahajan"
+}
