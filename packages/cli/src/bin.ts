@@ -106,18 +106,25 @@ async function main(): Promise<number> {
       }
       console.log(`${green('✓')} ${cfg}\n`)
       console.log(bold('Add to middleware.ts:\n'))
-      console.log(`  import { createRecorder, record } from '@spoor/next'
+      console.log(`  import { createRecorder, record, preset } from '@spoor/middleware'
   import { fileSink } from '@spoor/sinks/node'
+
+  // preset: 'next' | 'vite' | 'astro' — decides what is an asset, not a page.
+  const site = preset('vite', 'vercel-middleware')
 
   const spoor = createRecorder({
     sink: fileSink({ dir: '${P.events}' }),
-    onError: (e) => console.error('[spoor]', e),   // NF-7: never fail silently
+    ...site,
+    onError: (e) => console.error('[spoor]', e),   // never fail silently
   })
 
-  export function middleware(request: Request) {
-    record(spoor, request)                          // never blocks, never throws
-    return NextResponse.next()
+  export default function middleware(request: Request, ctx) {
+    record(spoor, request, (p) => ctx.waitUntil(p))  // never blocks, never throws
+    return next()
   }
+
+  // Same preset, so the matcher cannot disagree with what is ignored.
+  export const config = { matcher: site.matcher }
 `)
       return 0
     }

@@ -3,7 +3,7 @@
   "references": [
     { "path": "packages/core" },
     { "path": "packages/sinks" },
-    { "path": "packages/next" },
+    { "path": "packages/middleware" },
     { "path": "packages/cli" },
     { "path": "packages/mcp" }
   ]

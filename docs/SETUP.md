@@ -65,37 +65,94 @@ spoor doctor
 
 ## 3. Add the middleware
 
+One adapter for every fetch-shaped runtime. Two things vary, and they vary
+independently:
+
+| | Set by | What it decides |
+|---|---|---|
+| **Preset** | your framework | which paths are build output, not pages |
+| **Surface** | your host | where the row was collected, so it stays comparable |
+
 ```bash
-npm i @spoor/next @spoor/sinks     # or `npm link` from a local clone for now
+npm i @spoor/middleware @spoor/sinks   # or `npm link` from a local clone for now
 ```
 
+### Vite (React, Vue, Svelte) on Vercel
+
 ```ts
-// middleware.ts
-import { NextResponse } from 'next/server'
-import { createRecorder, record } from '@spoor/next'
-import { fileSink } from '@spoor/sinks/node'
+// middleware.ts — project root, beside vite.config.ts
+import { next } from '@vercel/functions'
+import { createRecorder, record, preset } from '@spoor/middleware'
+import { s3Sink } from '@spoor/sinks'
+
+const site = preset('vite', 'vercel-middleware')
 
 const spoor = createRecorder({
-  sink: fileSink({ dir: '.spoor/events' }),
+  sink: s3Sink({
+    bucket: 'spoor',
+    endpoint: `https://${process.env.R2_ACCOUNT_ID}.r2.cloudflarestorage.com`,
+    region: 'auto',
+    accessKeyId: process.env.R2_ACCESS_KEY_ID!,
+    secretAccessKey: process.env.R2_SECRET_ACCESS_KEY!,
+  }),
+  ...site,
   onError: (e) => console.error('[spoor]', e),
 })
 
-export function middleware(request: Request) {
-  record(spoor, request)
-  return NextResponse.next()
+export default function middleware(request: Request, ctx) {
+  record(spoor, request, (p) => ctx.waitUntil(p))
+  return next()
 }
 
-export const config = {
-  // Match pages, not assets. Crawler behaviour on a JS chunk says nothing.
-  matcher: ['/((?!_next/static|_next/image|favicon.ico).*)'],
-}
+export const config = { matcher: site.matcher }
 ```
 
-`record()` never blocks the response and never throws into it. If the sink is
-down, a batch is dropped and the page still serves -- there is
-[a test asserting exactly that](../packages/next/test/fail-open.test.ts).
+Vercel middleware runs on any project, framework or not, and it runs **before
+the cache**. On a static site that is the only position where this works at all:
+a logger running after the cache would see almost nothing.
 
-Confirm it locally. Start your dev server, then:
+### Next.js, Astro, or no framework
+
+Same file, different preset:
+
+```ts
+const site = preset('next', 'vercel-middleware')    // or 'astro', or 'none'
+```
+
+Self-hosting Next on your own server rather than Vercel? Use
+`preset('next', 'next-middleware')` — the surface differs because the collection
+point does, and rows are only comparable when that is recorded honestly.
+
+### Why the preset is load-bearing
+
+Each framework serves build output from its own prefix:
+
+| Preset | Ignores |
+|---|---|
+| `vite` | `/assets/` |
+| `next` | `/_next/static/`, `/_next/image`, `/__nextjs` |
+| `astro` | `/_astro/` |
+| all | `/favicon.*`, `/apple-touch-icon` |
+
+Use the wrong one and every bundle request is recorded as a page fetch. The
+blind-spots report then shows full coverage — of URLs no crawler ever asked for.
+
+`robots.txt`, `sitemap.xml` and `llms.txt` are **never** ignored. A crawler
+fetching one of those is the crawler telling you what it intends to do next.
+
+### The matcher is a cost control, not tidiness
+
+`ignore` keeps assets out of storage. `config.matcher` keeps them from being
+invoked at all — and on Vercel **every matched request is a billed invocation**.
+On a bundle-heavy SPA that is easily a 3x difference in invocation count.
+
+Both come from `preset()`, generated from one list, so they cannot drift. There
+is [a test proving the agreement](../packages/middleware/test/presets.test.ts)
+across every preset and a corpus of real paths.
+
+### Confirm it locally
+
+Start your dev server, then:
 
 ```bash
 curl -A "Mozilla/5.0 (compatible; GPTBot/1.2; +https://openai.com/gptbot)" \
@@ -105,7 +162,16 @@ cat .spoor/events/*.ndjson | head -1
 
 You should see one JSON line with `"crawler_bucket":"gptbot"` and
 `"crawler_purpose":"train"`. Your own browser hits produce nothing: human rows
-are dropped at source by default.
+are dropped at source by default. Requests to `/assets/*` produce nothing
+either — that is the preset working.
+
+### One field this surface always leaves alone
+
+`cache_status` is recorded as `unknown`, and that is correct rather than a gap.
+The schema carries the field because a response served from cache *without*
+invoking the logger is an unlogged visit. Here the inverse holds: middleware
+runs before the cache, so at record time the status does not exist yet —
+`x-vercel-cache` is a *response* header. Inferring a value would invent a fact.
 
 ## 4. Production storage
 
@@ -127,10 +193,11 @@ R2 is usually the cheaper choice here because it has no egress fees.
 ### Point the middleware at it
 
 ```ts
-import { createRecorder, record } from '@spoor/next'
+import { createRecorder, record, preset } from '@spoor/middleware'
 import { s3Sink } from '@spoor/sinks'
 
 const spoor = createRecorder({
+  ...preset('vite', 'vercel-middleware'),
   sink: s3Sink({
     bucket: 'spoor',
     endpoint: `https://${process.env.R2_ACCOUNT_ID}.r2.cloudflarestorage.com`,

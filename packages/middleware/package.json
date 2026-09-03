@@ -1,7 +1,7 @@
 {
-  "name": "@spoor/next",
+  "name": "@spoor/middleware",
   "version": "0.1.0",
-  "description": "spoor's Next.js middleware adapter \u2014 the reference collection surface (PRD CS-3).",
+  "description": "spoor's request-path adapter for any fetch-shaped runtime \u2014 Vercel, Netlify, Deno Deploy, Bun, Node. Framework presets for Next.js, Vite and Astro.",
   "license": "MIT",
   "type": "module",
   "main": "./dist/index.js",
@@ -25,11 +25,20 @@
   "repository": {
     "type": "git",
     "url": "git+https://github.com/varunmahajan1/spoor.git",
-    "directory": "packages/next"
+    "directory": "packages/middleware"
   },
   "homepage": "https://github.com/varunmahajan1/spoor#readme",
   "bugs": {
     "url": "https://github.com/varunmahajan1/spoor/issues"
   },
-  "author": "Varun Mahajan"
+  "author": "Varun Mahajan",
+  "keywords": [
+    "spoor",
+    "ai-crawlers",
+    "middleware",
+    "vercel",
+    "vite",
+    "nextjs",
+    "edge"
+  ]
 }

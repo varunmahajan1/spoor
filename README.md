@@ -59,24 +59,43 @@ That generates synthetic traffic so you can see the output shape before
 instrumenting anything. Then point it at your own site — full walkthrough in
 **[docs/SETUP.md](docs/SETUP.md)**.
 
-## Install on a Next.js site
+## Install
+
+One adapter, any fetch-shaped runtime — Vercel, Netlify, Deno Deploy, Bun, Node.
+The framework decides what counts as an asset; the host decides where collection
+happens. A preset covers the first, a surface the second.
 
 ```ts
-// middleware.ts
-import { NextResponse } from 'next/server'
-import { createRecorder, record } from '@spoor/next'
-import { fileSink } from '@spoor/sinks/node'
+// middleware.ts — a Vite SPA on Vercel
+import { next } from '@vercel/functions'
+import { createRecorder, record, preset } from '@spoor/middleware'
+import { s3Sink } from '@spoor/sinks'
+
+const site = preset('vite', 'vercel-middleware')   // or 'next' | 'astro'
 
 const spoor = createRecorder({
-  sink: fileSink({ dir: '.spoor/events' }),
-  onError: (e) => console.error('[spoor]', e),   // never fail silently
+  sink: s3Sink({ /* R2 — see docs/SETUP.md */ }),
+  ...site,
+  onError: (e) => console.error('[spoor]', e),     // never fail silently
 })
 
-export function middleware(request: Request) {
-  record(spoor, request)          // never blocks, never throws
-  return NextResponse.next()
+export default function middleware(request: Request, ctx) {
+  record(spoor, request, (p) => ctx.waitUntil(p))  // never blocks, never throws
+  return next()
 }
+
+// Generated from the same preset, so it cannot disagree with what is ignored.
+export const config = { matcher: site.matcher }
 ```
+
+**The preset is not cosmetic.** Vite emits hashed bundles to `/assets/`, Next to
+`/_next/static/`, Astro to `/_astro/`. Instrument a Vite site with the Next list
+and every JavaScript and CSS request is recorded as a page fetch — after which
+blind-spots reads as full coverage of URLs no crawler ever asked for.
+
+The matcher matters for a different reason: on Vercel every matched request is a
+billed invocation. `ignore` saves storage, `matcher` saves compute, and both are
+generated from one list so they cannot drift.
 
 Then:
 
@@ -99,7 +118,7 @@ shape of the impossibility differs per platform.
 
 | Platform | How | Status |
 |---|---|---|
-| Next.js / Vercel | `@spoor/next` middleware | ✅ Shipping |
+| Anything on Vercel or Netlify (Vite, Next, Astro, plain) | `@spoor/middleware` | ✅ Shipping |
 | Any site on Cloudflare | Worker | 🚧 Next |
 | **Standard Shopify** | Cloudflare in front, via O2O | ⚠️ **See below** |
 | Self-hosted, Magento, WooCommerce with shell | Vector config | 🚧 Planned |
@@ -215,7 +234,7 @@ ingest ──┘                                                        └─�
 | Package | What |
 |---|---|
 | [`@spoor/core`](packages/core) | Schema, classifier, verification. **Zero runtime dependencies** — it is imported into edge runtimes |
-| [`@spoor/next`](packages/next) | Next.js middleware (CS-3) |
+| [`@spoor/middleware`](packages/middleware) | Request-path adapter for any fetch runtime, with `next` / `vite` / `astro` presets |
 | [`@spoor/sinks`](packages/sinks) | File, S3/R2 (SigV4, no AWS SDK), webhook, memory |
 | [`spoor`](packages/cli) | CLI: roll-up, reports, SQL |
 | [`@spoor/mcp`](packages/mcp) | MCP server |
@@ -240,7 +259,7 @@ The adapters run in front of real traffic, so:
 
 ## Status
 
-**v0.1, early.** Working end to end: the Next.js middleware, the classifier,
+**v0.1, early.** Working end to end: the middleware adapter, the classifier,
 IP-range verification, file and S3/R2 sinks, the Parquet roll-up, the blind-spots
 report and the MCP server. 90 tests.
 

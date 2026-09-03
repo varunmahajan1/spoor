@@ -151,7 +151,7 @@ describe('what gets recorded', () => {
     expect(e.crawler_bucket).toBe('gptbot')
     expect(e.crawler_purpose).toBe('train')
     expect(e.ip_prefix).toBe('203.0.113.0/24')
-    expect(e.surface).toBe('next-middleware')
+    expect(e.surface).toBe('vercel-middleware')  // default; a preset sets it explicitly
     expect(JSON.stringify(e)).not.toContain('203.0.113.9')
   })
 

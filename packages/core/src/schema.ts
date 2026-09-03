@@ -23,8 +23,23 @@ export type CrawlerPurpose = 'train' | 'index' | 'user_fetch' | 'preview' | 'unk
  *  surface and one from another are not comparable (PRD §8.1, VF-7). */
 export type VerifiedBy = 'ip_range' | 'rdns' | 'cf_verified_bot' | 'unverified'
 
-/** Which collection surface produced the row. */
-export type Surface = 'next-middleware' | 'cloudflare-worker' | 'vector' | 'vercel-drain' | 'wordpress' | 'test'
+/**
+ * Which collection surface produced the row.
+ *
+ * Every value names a *place code runs*, never a framework — the framework
+ * determines what to ignore, the host determines where collection happens and
+ * what the row can be compared against. `next-middleware` is a self-hosted Next
+ * server; the same code deployed to Vercel is `vercel-middleware`, because it
+ * runs at a different point relative to the cache.
+ */
+export type Surface =
+  | 'next-middleware'
+  | 'vercel-middleware'
+  | 'cloudflare-worker'
+  | 'vector'
+  | 'vercel-drain'
+  | 'wordpress'
+  | 'test'
 
 /** Whether the origin was reached. A response served from cache without
  *  invoking the logger is an unlogged visit; recording this makes the blind

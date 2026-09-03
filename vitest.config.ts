@@ -12,6 +12,7 @@ export default defineConfig({
       '@spoor/core': pkg('core'),
       '@spoor/sinks/node': pkg('sinks', 'src/node.ts'),
       '@spoor/sinks': pkg('sinks'),
+      '@spoor/middleware': pkg('middleware'),
       spoor: pkg('cli'),
     },
   },

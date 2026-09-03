@@ -17,8 +17,11 @@ First release. Working end to end.
 - **Verification against published IP ranges** — about 1000 prefixes across 12
   crawlers, fetched from the operators and never hand-typed. `verified_by`
   records the method, so rows from different surfaces stay comparable.
-- **`@spoor/next`** — middleware adapter. Non-blocking, fail-open, batched,
-  killable, and loud when it breaks.
+- **`@spoor/middleware`** — request-path adapter for any fetch-shaped runtime
+  (Vercel, Netlify, Deno Deploy, Bun, Node). Non-blocking, fail-open, batched,
+  killable, and loud when it breaks. Framework presets (`next`, `vite`, `astro`)
+  decide what is build output rather than a page, and generate the host route
+  matcher from the same list so the two cannot disagree.
 - **`@spoor/sinks`** — file, S3/R2, webhook, memory. The S3 sink signs its own
   requests with SigV4 over Web Crypto rather than carrying an AWS SDK, and R2
   speaks the S3 API so one implementation covers both.
@@ -30,6 +33,17 @@ First release. Working end to end.
   Googlebot and Bingbot by default, because a search crawl is not evidence an
   answer engine saw the page.
 - 90 tests. A scheduled job refreshes the IP ranges and opens a pull request.
+
+### Notes
+
+- The adapter never imported Next.js — it was typed against `Request`/`Response`
+  from the start — so naming it after a framework was wrong, and naming it after
+  a host would have been the same mistake one level up. It is `@spoor/middleware`
+  because what varies is the framework's asset paths and the host's collection
+  point, not the code.
+- `cache_status` is `unknown` on every host-middleware surface. Middleware runs
+  before the cache, so at record time the status does not exist; `x-vercel-cache`
+  is a response header. Recording `unknown` is honest, not missing.
 
 ### Known limitations
 
