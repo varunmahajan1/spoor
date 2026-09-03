@@ -57,6 +57,7 @@ ${bold('Commands')}
   init                    Write a config and print the middleware snippet
   preflight <url>         Can AI crawlers reach this site, and read it?
   ingest <path>           Classify log rows shipped by Vector (run on the log host)
+  matcher [preset]        Print the route matcher to paste into a host config
   demo                    Generate sample traffic so you can see real output now
   doctor                  Check the classifier, the range list and the store
   rollup                  Roll NDJSON up into Parquet, deduped on event_id
@@ -130,6 +131,24 @@ async function main(): Promise<number> {
   // Same preset, so the matcher cannot disagree with what is ignored.
   export const config = { matcher: site.matcher }
 `)
+      return 0
+    }
+
+    case 'matcher': {
+      // Next.js parses `export const config` at build time and rejects any
+      // computed value, so `matcher: site.matcher` fails there even though it
+      // works in a Vercel-native or Netlify config. Printing it is the answer:
+      // the value is still generated from the preset, it just gets copied.
+      const { preset, PRESET_NAMES } = await import('@spoor/middleware')
+      const name = (sub ?? 'next') as (typeof PRESET_NAMES)[number]
+      if (!PRESET_NAMES.includes(name)) {
+        console.error(red(`unknown preset: ${name}`))
+        console.error(dim(`  one of: ${PRESET_NAMES.join(', ')}`))
+        return 1
+      }
+      const p = preset(name)
+      if (has('json')) { console.log(JSON.stringify(p.matcher)); return 0 }
+      console.log(p.matcher[0])
       return 0
     }
 

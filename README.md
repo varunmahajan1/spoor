@@ -88,6 +88,20 @@ export default function middleware(request: Request, ctx) {
 export const config = { matcher: site.matcher }
 ```
 
+> **On Next.js the matcher must be a literal.** Next parses `export const
+> config` at build time and rejects any computed value — `matcher:
+> site.matcher` fails with *"matcher needs to be a static string or array of
+> static strings"*. Print it and paste it:
+>
+> ```bash
+> spoor matcher next     # or vite | astro | none
+> ```
+>
+> Other hosts (a Vercel-native `middleware.ts` for a non-Next app, Netlify) take
+> the computed value directly. Also note: Next 16.2 renamed the file convention
+> from `middleware.ts` to `proxy.ts` — same signature, and it warns on build if
+> you use the old name.
+
 **The preset is not cosmetic.** Vite emits hashed bundles to `/assets/`, Next to
 `/_next/static/`, Astro to `/_astro/`. Instrument a Vite site with the Next list
 and every JavaScript and CSS request is recorded as a page fetch — after which

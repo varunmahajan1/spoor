@@ -27,7 +27,8 @@
   "dependencies": {
     "@spoor/core": "0.1.0",
     "@spoor/sinks": "0.1.0",
-    "@duckdb/node-api": "^1.5.5-r.4"
+    "@duckdb/node-api": "^1.5.5-r.4",
+    "@spoor/middleware": "0.1.0"
   },
   "scripts": {
     "build": "tsc -b"

@@ -1,6 +1,24 @@
 {
   "extends": "../../tsconfig.base.json",
-  "compilerOptions": { "outDir": "dist", "rootDir": "src", "composite": true, "module": "NodeNext", "moduleResolution": "nodenext" },
-  "include": ["src/**/*.ts"],
-  "references": [{ "path": "../core" }, { "path": "../sinks" }]
+  "compilerOptions": {
+    "outDir": "dist",
+    "rootDir": "src",
+    "composite": true,
+    "module": "NodeNext",
+    "moduleResolution": "nodenext"
+  },
+  "include": [
+    "src/**/*.ts"
+  ],
+  "references": [
+    {
+      "path": "../core"
+    },
+    {
+      "path": "../sinks"
+    },
+    {
+      "path": "../middleware"
+    }
+  ]
 }

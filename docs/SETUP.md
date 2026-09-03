@@ -135,6 +135,20 @@ export default function middleware(request: Request, ctx) {
 export const config = { matcher: site.matcher }
 ```
 
+> **On Next.js the matcher must be a literal.** Next parses `export const
+> config` at build time and rejects any computed value — `matcher:
+> site.matcher` fails with *"matcher needs to be a static string or array of
+> static strings"*. Print it and paste it:
+>
+> ```bash
+> spoor matcher next     # or vite | astro | none
+> ```
+>
+> Other hosts (a Vercel-native `middleware.ts` for a non-Next app, Netlify) take
+> the computed value directly. Also note: Next 16.2 renamed the file convention
+> from `middleware.ts` to `proxy.ts` — same signature, and it warns on build if
+> you use the old name.
+
 Vercel middleware runs on any project, framework or not, and it runs **before
 the cache**. On a static site that is the only position where this works at all:
 a logger running after the cache would see almost nothing.
@@ -146,6 +160,11 @@ Same file, different preset:
 ```ts
 const site = preset('next', 'vercel-middleware')    // or 'astro', or 'none'
 ```
+
+On Next.js the file is `proxy.ts` (renamed from `middleware.ts` in 16.2, same
+signature), the exported function is `proxy`, and the matcher has to be pasted
+in as a literal from `spoor matcher next` — see the note above. A worked example
+is [varunmahajan.in's proxy.ts](https://github.com/varunmahajan1/varunmahajan/blob/main/proxy.ts).
 
 Self-hosting Next on your own server rather than Vercel? Use
 `preset('next', 'next-middleware')` — the surface differs because the collection
